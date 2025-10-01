@@ -34,10 +34,14 @@
           packages.android-sdk = inputs.android-nixpkgs.sdk.${system} (
             sdkPkgs: with sdkPkgs; [
               cmdline-tools-latest
-              build-tools-34-0-0
+              build-tools-35-0-0
+              build-tools-36-0-0
               platform-tools
-              platforms-android-34
+              platforms-android-36
               emulator
+              system-images-android-36-google-apis-playstore-x86-64
+              ndk-27-0-12077973
+              cmake-3-22-1
             ]
           );
           devshells.default = {
@@ -61,6 +65,10 @@
               {
                 name = "CHROME_EXECUTABLE";
                 value = "${pkgs.ungoogled-chromium}/bin/chromium";
+              }
+              {
+                name = "ANDROID_AVD_HOME";
+                prefix = "$HOME/.config/.android/avd/";
               }
             ];
             packages = with pkgs; [
