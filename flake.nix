@@ -1,35 +1,76 @@
 {
-inputs = {
-  nixpkgs.url = "github:NixOS/nixpkgs/master";
-  flake-utils.url = "github:numtide/flake-utils";
-};
-outputs = { self, nixpkgs, flake-utils }:
-  flake-utils.lib.eachDefaultSystem (system:
-    let
-      pkgs = import nixpkgs {
-        inherit system;
-        config = {
-          android_sdk.accept_license = true;
-          allowUnfree = true;
+  description = "Flutter dev environment";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
+    devshell.url = "github:numtide/devshell";
+    devshell.inputs.nixpkgs.follows = "nixpkgs";
+    android-nixpkgs.url = "github:tadfisher/android-nixpkgs/stable";
+    android-nixpkgs.inputs.nixpkgs.follows = "nixpkgs";
+    android-nixpkgs.inputs.devshell.follows = "devshell";
+  };
+
+  outputs =
+    inputs@{ flake-parts, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [ inputs.devshell.flakeModule ];
+      systems = [ "x86_64-linux" ];
+      perSystem =
+        {
+          config,
+          self',
+          inputs',
+          pkgs,
+          system,
+          ...
+        }:
+        rec {
+          _module.args.pkgs = import inputs.nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+          packages.android-sdk = inputs.android-nixpkgs.sdk.${system} (
+            sdkPkgs: with sdkPkgs; [
+              cmdline-tools-latest
+              build-tools-34-0-0
+              platform-tools
+              platforms-android-34
+              emulator
+            ]
+          );
+          devshells.default = {
+            env = [
+              {
+                name = "PATH";
+                prefix = "$HOME/.pub-cache/bin";
+              }
+              {
+                name = "ANDROID_HOME";
+                value = "${packages.android-sdk}/share/android-sdk";
+              }
+              {
+                name = "ANDROID_SDK_ROOT";
+                value = "${packages.android-sdk}/share/android-sdk";
+              }
+              {
+                name = "JAVA_HOME";
+                value = pkgs.jdk.home;
+              }
+              {
+                name = "CHROME_EXECUTABLE";
+                value = "${pkgs.ungoogled-chromium}/bin/chromium";
+              }
+            ];
+            packages = with pkgs; [
+              flutter
+              jdk
+              gradle
+              packages.android-sdk
+              android-studio
+            ];
+          };
         };
-      };
-      # buildToolsVersion = "34.0.0";
-      # androidComposition = pkgs.androidenv.composeAndroidPackages {
-      #   buildToolsVersions = [ buildToolsVersion "28.0.3" ];
-      #   platformVersions = [ "34" "28" ];
-      #   abiVersions = [ "armeabi-v7a" "arm64-v8a" ];
-      # };
-      # androidSdk = androidComposition.androidsdk;
-    in
-    {
-      devShell =
-        with pkgs; mkShell rec {
-          # ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
-          buildInputs = [
-            flutter
-            # androidSdk # The customized SDK that we've made above
-            # jdk17
-          ];
-        };
-    });
+    };
 }
