@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:proxima/ui/home/home.dart';
-import 'package:proxima/ui/player/player.dart';
+import 'package:proxima/ui/pages/home/home.dart';
+import 'package:proxima/ui/pages/player/player.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: <String, WidgetBuilder> {
         '/player': (BuildContext context) => Player()
-      },
+      }
     );
   }
 }
